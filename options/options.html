@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Options — Instagram Tracker</title>
+		<style>
+			body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;padding:16px;max-width:720px}
+			h1{font-size:18px}
+			ol{line-height:1.6}
+			.field{margin:12px 0}
+			label{display:block;margin-bottom:6px}
+			input[type="number"]{width:120px;padding:6px}
+			.status{margin-top:8px;color:#444}
+			hr{margin:16px 0}
+			.small{font-size:12px;color:#555}
+		</style>
+	</head>
+	<body>
+		<h1>Paramètres</h1>
+		<div class="field">
+			<label><input type="checkbox" id="scan-enabled"> Activer le scan automatique</label>
+			<div class="small">Désactivez pour empêcher tout scan périodique.</div>
+		</div>
+		<div class="field">
+			<label for="scan-interval">Intervalle (minutes)</label>
+			<input id="scan-interval" type="number" min="1" step="1" value="15">
+			<div class="small">Le scan utilise un onglet Instagram ouvert pour fonctionner.</div>
+		</div>
+		<div class="field">
+			<button id="save">Enregistrer</button>
+			<button id="reset">Réinitialiser par défaut</button>
+			<div id="status" class="status"></div>
+		</div>
+
+		<hr>
+		<h1>Comment utiliser l’extension (MVP)</h1>
+		<ol>
+			<li>Connectez-vous à Instagram sur <strong>www.instagram.com</strong> dans un onglet Chrome.</li>
+			<li>Ouvrez votre <strong>profil</strong> (ex: https://www.instagram.com/votre_utilisateur/).</li>
+			<li>Ouvrez le popup de l’extension et cliquez <strong>Scanner mes abonnés</strong>.
+				<ul>
+					<li>L’extension ouvrira la fenêtre des abonnés et les chargera tous.</li>
+					<li>À la fin, elle sauvegardera l’instantané et notifiera tout <em>unfollow</em> détecté.</li>
+				</ul>
+			</li>
+			<li>Pour l’expérimental: allez sur <strong>/accounts/activity/</strong>, puis "Interactions récentes" dans le popup.</li>
+		</ol>
+
+		<script src="options.js"></script>
+	</body>
+</html>

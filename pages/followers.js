@@ -30,25 +30,6 @@ async function loadSnapshot(){
 	});
 }
 
-async function saveSnapshot(usernames){
-	return new Promise((resolve)=>{
-		chrome.runtime.sendMessage({type:'SAVE_SNAPSHOT',usernames},(res)=>{
-			resolve(!!res?.ok);
-		});
-	});
-}
-
-async function scanFromActiveTab(){
-	const tabs=await chrome.tabs.query({url:'https://www.instagram.com/*'});
-	if(!tabs||tabs.length===0){ return {ok:false,reason:'no_instagram_tab'}; }
-	const tab=tabs[0];
-	return new Promise((resolve)=>{
-		chrome.tabs.sendMessage(tab.id,{type:'SCAN_FOLLOWERS'},(res)=>{
-			resolve(res||{ok:false});
-		});
-	});
-}
-
 function openDownload(filename, content, mime='text/csv'){
 	const blob=new Blob([content],{type:mime});
 	const url=URL.createObjectURL(blob);
@@ -58,37 +39,16 @@ function openDownload(filename, content, mime='text/csv'){
 }
 
 async function init(){
-	document.getElementById('btn-refresh').addEventListener('click', async ()=>{
-		setStatus('Chargement de l\'instantané...');
-		const res=await loadSnapshot();
-		renderUsernames(res.usernames||[]);
-		setStatus('');
-		setMeta(res.lastScanAt? `Dernier enregistrement: ${new Date(res.lastScanAt).toLocaleString()}` : 'Aucun enregistrement.');
-	});
-	
-	document.getElementById('btn-scan').addEventListener('click', async ()=>{
-		setStatus('Scan en cours... Ouvrez votre profil si nécessaire.');
-		const res=await scanFromActiveTab();
-		if(!res?.ok){ setStatus('Impossible de scanner (onglet manquant ou modal).'); return; }
-		renderUsernames(res.usernames||[]);
-		setStatus(`Scan terminé. Total: ${(res.usernames||[]).length}`);
-		setMeta('Résultats non enregistrés. Cliquez "Enregistrer comme instantané" pour les conserver.');
-	});
-	
-	document.getElementById('btn-save').addEventListener('click', async ()=>{
-		const rows=[...document.querySelectorAll('#tbody tr td:nth-child(2)')].map(td=>td.textContent||'');
-		await saveSnapshot(rows);
-		setStatus(`Instantané enregistré (${rows.length}).`);
-		setMeta(`Dernier enregistrement: ${new Date().toLocaleString()}`);
-	});
-	
+	setStatus('Chargement de l\'instantané...');
+	const res=await loadSnapshot();
+	renderUsernames(res.usernames||[]);
+	setStatus('');
+	setMeta(res.lastScanAt? `Dernier enregistrement: ${new Date(res.lastScanAt).toLocaleString()}` : 'Aucun enregistrement.');
+
 	document.getElementById('btn-export').addEventListener('click', ()=>{
 		const rows=[...document.querySelectorAll('#tbody tr td:nth-child(2)')].map(td=>td.textContent||'');
 		openDownload('followers.csv', toCsv(rows));
 	});
-	
-	// auto load snapshot
-	document.getElementById('btn-refresh').click();
 }
 
 document.addEventListener('DOMContentLoaded', init);

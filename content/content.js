@@ -3,38 +3,76 @@ function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Ensure followers modal is open on profile page; return the scroll container element
-async function openFollowersModal() {
-	// Detect profile page
-	// URL like: https://www.instagram.com/<username>/
-	if (!/^https:\/\/www\.instagram\.com\/[^/]+\/?$/.test(location.href)) {
+function isProfilePage(url){
+	return /^https:\/\/www\.instagram\.com\/[^/]+\/?$/.test(url);
+}
+function isFollowersPage(url){
+	return /^https:\/\/www\.instagram\.com\/[^/]+\/followers\/?$/.test(url);
+}
+
+// Try to find the scrollable container inside followers UI (modal/page)
+function findFollowersScrollContainer() {
+	// Prefer inside dialog
+	const dialog = document.querySelector('div[role="dialog"]');
+	const candidates = [];
+	if (dialog) {
+		candidates.push(
+			...dialog.querySelectorAll('div, section, main')
+		);
+	}
+	// Fallback: whole document
+	candidates.push(...document.querySelectorAll('div, section, main'));
+	let best = null;
+	let bestScore = -1;
+	for (const el of candidates) {
+		const style = getComputedStyle(el);
+		const canScrollY = /(auto|scroll)/.test(style.overflowY || '') || el.scrollHeight > el.clientHeight + 50;
+		const tall = el.scrollHeight;
+		const score = (canScrollY ? 1 : 0) * 100000 + tall;
+		if (canScrollY && score > bestScore) {
+			best = el;
+			bestScore = score;
+		}
+	}
+	return best;
+}
+
+// Ensure followers UI is open; return the scroll container element
+async function openFollowersUIAndGetScrollContainer() {
+	if (isFollowersPage(location.href)) {
+		// Already on followers page
+		for (let i = 0; i < 20; i++) {
+			const sc = findFollowersScrollContainer();
+			if (sc) return sc;
+			await sleep(250);
+		}
 		return null;
 	}
-	// Find and click the followers link in the header counters
+	if (!isProfilePage(location.href)) return null;
+	// Click the followers link
 	const counters = document.querySelectorAll('header a, header li a');
 	let followersLink = null;
 	for (const a of counters) {
-		if (/followers|abonnés|abonne|followers?/i.test(a.textContent || '')) {
+		if (/followers|abonnés|abonne|abonnés?/i.test(a.textContent || '')) {
 			followersLink = a;
 			break;
 		}
 	}
 	if (!followersLink) return null;
 	followersLink.click();
-	// Wait for modal
+	// Wait for modal and scroll container
 	for (let i = 0; i < 20; i++) {
-		const scrollEl = document.querySelector('div[role="dialog"] div[role="dialog"] div[style*="overflow"]')
-			|| document.querySelector('div[role="dialog"] [data-visualcompletion] div[style*="overflow"]')
-			|| document.querySelector('div[role="dialog"] div[style*="overflow"]');
-		if (scrollEl) return scrollEl;
+		const sc = findFollowersScrollContainer();
+		if (sc) return sc;
 		await sleep(300);
 	}
 	return null;
 }
 
-// Extract usernames from the currently loaded list items in the followers modal
-function collectUsernamesFromModal() {
-	const items = document.querySelectorAll('div[role="dialog"] a[href^="/"]:not([role="button"])');
+// Extract usernames from a given root
+function collectUsernames(root) {
+	const scope = root || document;
+	const items = scope.querySelectorAll('a[href^="/"]:not([role="button"])');
 	const usernames = new Set();
 	for (const el of items) {
 		const href = el.getAttribute('href') || '';
@@ -47,47 +85,53 @@ function collectUsernamesFromModal() {
 	return Array.from(usernames);
 }
 
-// Scroll the modal to load all followers (best-effort with cap)
-async function loadAllFollowers(scrollEl, maxScrolls = 200, step = 1000) {
+// Scroll until no new usernames are loaded for several iterations
+async function loadAllFollowers(scrollEl, options = {}) {
+	const {
+		maxIterations = 600,
+		settleRounds = 3,
+		waitMs = 700
+	} = options;
 	let lastCount = 0;
-	for (let i = 0; i < maxScrolls; i++) {
+	let stableRounds = 0;
+	for (let i = 0; i < maxIterations; i++) {
 		scrollEl.scrollTop = scrollEl.scrollHeight;
-		await sleep(600);
-		const current = collectUsernamesFromModal().length;
-		if (current === lastCount) {
-			// one extra wait to be sure
-			await sleep(600);
-			const current2 = collectUsernamesFromModal().length;
-			if (current2 === lastCount) break;
+		await sleep(waitMs);
+		const current = collectUsernames(scrollEl).length;
+		if (current <= lastCount) {
+			stableRounds += 1;
+			if (stableRounds >= settleRounds) break;
+		} else {
+			stableRounds = 0;
+			lastCount = current;
 		}
-		lastCount = current;
 	}
 }
 
 async function scanFollowers() {
-	const scrollEl = await openFollowersModal();
+	const scrollEl = await openFollowersUIAndGetScrollContainer();
 	if (!scrollEl) {
 		return { ok: false, reason: 'not_on_profile_or_modal_failed' };
 	}
 	await loadAllFollowers(scrollEl);
-	const usernames = collectUsernamesFromModal();
-	// Close modal (best effort)
-	const closeBtn = document.querySelector('div[role="dialog"] button svg[aria-label="Close"], div[role="dialog"] button[aria-label="Close"]')
-		?.closest('button');
-	try { closeBtn && closeBtn.click(); } catch {}
+	const usernames = collectUsernames(scrollEl);
+	// Close modal if present and not on dedicated page
+	if (!isFollowersPage(location.href)) {
+		const closeBtn = document.querySelector('div[role="dialog"] button svg[aria-label="Close"], div[role="dialog"] button[aria-label="Close"]')
+			?.closest('button');
+		try { closeBtn && closeBtn.click(); } catch {}
+	}
 	return { ok: true, usernames };
 }
 
 // Experimental: scrape recent interactions from /accounts/activity/ page
 function scrapeRecentInteractions() {
-	// This page lists likes/comments; we collect profile links shown
 	const links = document.querySelectorAll('a[href^="/"]');
 	const usernames = new Set();
 	for (const a of links) {
 		const href = a.getAttribute('href') || '';
 		const match = href.match(/^\/([^/]+)\/$/);
 		if (match && match[1] && !['accounts', 'explore', 'reels', 'stories'].includes(match[1])) {
-			// Heuristic: ensure the link is inside activity container
 			if (a.closest('main')) usernames.add(match[1]);
 		}
 	}

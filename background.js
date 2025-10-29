@@ -37,7 +37,13 @@ async function appendHistory(event) {
 }
 
 function notify(title, message) {
-	chrome.notifications.create('', { type: 'basic', iconUrl: 'icon.png', title, message, silent: false });
+	const iconUrl = chrome.runtime.getURL('icons/icon128.png');
+	try {
+		chrome.notifications.create('', { type: 'basic', iconUrl, title, message, silent: false });
+	} catch (e) {
+		// Ignore notification errors (e.g., icon missing) to avoid breaking logic
+		console.warn('Notification error:', e);
+	}
 }
 
 function diffFollowers(previousUsernames, currentUsernames) {

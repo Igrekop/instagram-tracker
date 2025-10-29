@@ -32,36 +32,26 @@ async function appendHistory(event) {
 	const { events_history } = await readLocal([STORAGE_KEYS.history]);
 	const history = Array.isArray(events_history) ? events_history : [];
 	history.unshift(event);
-	// Cap history length to 500 entries
 	const capped = history.slice(0, 500);
 	await writeLocal({ [STORAGE_KEYS.history]: capped });
 }
 
-// Create a Chrome notification
 function notify(title, message) {
-	chrome.notifications.create('', {
-		type: 'basic',
-		iconUrl: 'icon.png',
-		title,
-		message,
-		silent: false
-	});
+	chrome.notifications.create('', { type: 'basic', iconUrl: 'icon.png', title, message, silent: false });
 }
 
-// Diff two sets of followers
 function diffFollowers(previousUsernames, currentUsernames) {
 	const prev = new Set(previousUsernames || []);
 	const curr = new Set(currentUsernames || []);
 	const unfollowers = [];
 	for (const username of prev) {
-		if (!curr.has(username)) {
-			unfollowers.push(username);
-		}
+		if (!curr.has(username)) unfollowers.push(username);
 	}
 	return { unfollowers };
 }
 
-// Trigger scan via active instagram tab content script
+async function delay(ms){ return new Promise(r => setTimeout(r, ms)); }
+
 async function triggerFollowersScanOnActiveTab() {
 	const tabs = await chrome.tabs.query({ url: 'https://www.instagram.com/*' });
 	if (!tabs || tabs.length === 0) {
@@ -69,11 +59,10 @@ async function triggerFollowersScanOnActiveTab() {
 	}
 	const targetTab = tabs[0];
 	const response = await chrome.tabs.sendMessage(targetTab.id, { type: 'SCAN_FOLLOWERS' }).catch(() => null);
-	if (!response || !response.ok) return { ok: false, reason: 'scan_failed' };
-	return { ok: true, usernames: response.usernames };
+	if (!response) return { ok: false, reason: 'scan_failed' };
+	return response.ok ? { ok: true, usernames: response.usernames } : { ok: false, reason: response.reason || 'scan_failed' };
 }
 
-// Periodic job: if an instagram tab is open, ask it to scan followers and compute diffs
 async function periodicFollowersCheck() {
 	const result = await triggerFollowersScanOnActiveTab();
 	if (!result.ok) return;
@@ -87,13 +76,9 @@ async function periodicFollowersCheck() {
 			notify('Unfollow détecté', `${username} ne vous suit plus.`);
 		}
 	}
-	await writeLocal({
-		[STORAGE_KEYS.followersSnapshot]: currentUsernames,
-		[STORAGE_KEYS.lastScanAt]: Date.now()
-	});
+	await writeLocal({ [STORAGE_KEYS.followersSnapshot]: currentUsernames, [STORAGE_KEYS.lastScanAt]: Date.now() });
 }
 
-// Planification des alarmes selon réglages
 async function scheduleAlarmFromSettings() {
 	const { [STORAGE_KEYS.scanEnabled]: enabled, [STORAGE_KEYS.scanIntervalMin]: interval } = await readLocal([
 		STORAGE_KEYS.scanEnabled,
@@ -102,12 +87,9 @@ async function scheduleAlarmFromSettings() {
 	const isEnabled = typeof enabled === 'boolean' ? enabled : true;
 	const minutes = typeof interval === 'number' && interval >= 1 ? interval : 15;
 	await new Promise((resolve) => chrome.alarms.clear('followers_check', () => resolve()));
-	if (isEnabled && minutes >= 1) {
-		chrome.alarms.create('followers_check', { periodInMinutes: minutes });
-	}
+	if (isEnabled && minutes >= 1) chrome.alarms.create('followers_check', { periodInMinutes: minutes });
 }
 
-// Messages API
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	(async () => {
 		if (message?.type === 'GET_HISTORY') {
@@ -135,23 +117,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 			return;
 		}
 		if (message?.type === 'MANUAL_SCAN_FOLLOWERS') {
-			const result = await triggerFollowersScanOnActiveTab();
-			if (!result.ok) {
-				sendResponse({ ok: false, reason: result.reason });
-				return;
-			}
-			const currentUsernames = result.usernames;
-			const { followers_snapshot } = await readLocal([STORAGE_KEYS.followersSnapshot]);
-			const previousUsernames = Array.isArray(followers_snapshot) ? followers_snapshot : [];
-			const { unfollowers } = diffFollowers(previousUsernames, currentUsernames);
-			if (unfollowers.length > 0) {
-				for (const username of unfollowers) {
-					await appendHistory({ type: EVENT_TYPES.UNFOLLOW, username, at: Date.now() });
-					notify('Unfollow détecté', `${username} ne vous suit plus.`);
+			let attempts = 0;
+			let lastReason = null;
+			while (attempts < 4) {
+				const result = await triggerFollowersScanOnActiveTab();
+				if (result.ok) {
+					const currentUsernames = result.usernames;
+					const { followers_snapshot } = await readLocal([STORAGE_KEYS.followersSnapshot]);
+					const previousUsernames = Array.isArray(followers_snapshot) ? followers_snapshot : [];
+					const { unfollowers } = diffFollowers(previousUsernames, currentUsernames);
+					if (unfollowers.length > 0) {
+						for (const username of unfollowers) {
+							await appendHistory({ type: EVENT_TYPES.UNFOLLOW, username, at: Date.now() });
+							notify('Unfollow détecté', `${username} ne vous suit plus.`);
+						}
+					}
+					await writeLocal({ [STORAGE_KEYS.followersSnapshot]: currentUsernames, [STORAGE_KEYS.lastScanAt]: Date.now() });
+					sendResponse({ ok: true, unfollowers, count: currentUsernames.length });
+					return;
 				}
+				lastReason = result.reason;
+				if (result.reason === 'navigating_to_followers') {
+					await delay(1500);
+				} else if (result.reason === 'scan_failed') {
+					await delay(800);
+				} else {
+					break;
+				}
+				attempts++;
 			}
-			await writeLocal({ [STORAGE_KEYS.followersSnapshot]: currentUsernames, [STORAGE_KEYS.lastScanAt]: Date.now() });
-			sendResponse({ ok: true, unfollowers, count: currentUsernames.length });
+			sendResponse({ ok: false, reason: lastReason || 'scan_failed' });
 			return;
 		}
 		if (message?.type === 'SAVE_INTERACTIONS') {
@@ -159,19 +154,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 			for (const username of interactions) {
 				await appendHistory({ type: EVENT_TYPES.INTERACTION, username, at: Date.now() });
 			}
-			if (interactions.length) {
-				notify('Interactions récentes', `${interactions.length} utilisateur(s) ont interagi avec vous.`);
-			}
+			if (interactions.length) notify('Interactions récentes', `${interactions.length} utilisateur(s) ont interagi avec vous.`);
 			sendResponse({ ok: true, saved: interactions.length });
 			return;
 		}
-		// Default
 		sendResponse({ ok: false, reason: 'unknown_message' });
 	})();
-	return true; // keep the message channel open for async
+	return true;
 });
 
-// Defaults et planification
 chrome.runtime.onInstalled.addListener(async () => {
 	const { [STORAGE_KEYS.scanEnabled]: enabled, [STORAGE_KEYS.scanIntervalMin]: interval } = await readLocal([
 		STORAGE_KEYS.scanEnabled,
@@ -184,9 +175,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 	await scheduleAlarmFromSettings();
 });
 
-chrome.runtime.onStartup?.addListener(() => {
-	scheduleAlarmFromSettings().catch(() => {});
-});
+chrome.runtime.onStartup?.addListener(() => { scheduleAlarmFromSettings().catch(() => {}); });
 
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== 'local') return;
@@ -195,9 +184,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
 	}
 });
 
-// Alarm handler
 chrome.alarms.onAlarm.addListener((alarm) => {
-	if (alarm.name === 'followers_check') {
-		periodicFollowersCheck().catch(() => {});
-	}
+	if (alarm.name === 'followers_check') periodicFollowersCheck().catch(() => {});
 });

@@ -4,43 +4,49 @@ function sleep(ms) {
 }
 
 function isProfilePage(url){
-	return /^https:\/\/www\.instagram\.com\/[^/]+\/?$/.test(url);
+	return /^https:\/\/www\.instagram\.com\/([^/]+)\/?$/.test(url);
+}
+function extractUsername(url){
+	const m = url.match(/^https:\/\/www\.instagram\.com\/([^/]+)\/?$/);
+	return m ? m[1] : null;
 }
 function isFollowersPage(url){
 	return /^https:\/\/www\.instagram\.com\/[^/]+\/followers\/?$/.test(url);
 }
 
+function robustClick(el){
+	try{
+		['mousedown','mouseup','click'].forEach(type=>{
+			el.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,view:window}));
+		});
+	}catch{
+		try{ el.click(); }catch{}
+	}
+}
+
 // Try to find the scrollable container inside followers UI (modal/page)
 function findFollowersScrollContainer() {
-	// Prefer inside dialog
 	const dialog = document.querySelector('div[role="dialog"]');
-	const candidates = [];
 	if (dialog) {
-		candidates.push(
-			...dialog.querySelectorAll('div, section, main')
-		);
-	}
-	// Fallback: whole document
-	candidates.push(...document.querySelectorAll('div, section, main'));
-	let best = null;
-	let bestScore = -1;
-	for (const el of candidates) {
-		const style = getComputedStyle(el);
-		const canScrollY = /(auto|scroll)/.test(style.overflowY || '') || el.scrollHeight > el.clientHeight + 50;
-		const tall = el.scrollHeight;
-		const score = (canScrollY ? 1 : 0) * 100000 + tall;
-		if (canScrollY && score > bestScore) {
-			best = el;
-			bestScore = score;
+		const candidates = dialog.querySelectorAll('*');
+		let best = null;
+		let bestScore = -1;
+		for (const el of candidates) {
+			const style = getComputedStyle(el);
+			const canScrollY = /(auto|scroll)/.test(style.overflowY || '') || el.scrollHeight > el.clientHeight + 50;
+			if (!canScrollY) continue;
+			const linkCount = el.querySelectorAll('a[href^="/"]').length;
+			const score = linkCount * 1000 + el.scrollHeight;
+			if (score > bestScore) { best = el; bestScore = score; }
 		}
+		if (best) return best;
 	}
-	return best;
+	return (document.scrollingElement || document.documentElement);
 }
 
 // Ensure followers UI is open; return the scroll container element
 async function openFollowersUIAndGetScrollContainer() {
 	if (isFollowersPage(location.href)) {
-		// Already on followers page
 		for (let i = 0; i < 20; i++) {
 			const sc = findFollowersScrollContainer();
 			if (sc) return sc;
@@ -59,12 +65,20 @@ async function openFollowersUIAndGetScrollContainer() {
 		}
 	}
 	if (!followersLink) return null;
-	followersLink.click();
+	robustClick(followersLink);
 	// Wait for modal and scroll container
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 15; i++) {
 		const sc = findFollowersScrollContainer();
-		if (sc) return sc;
-		await sleep(300);
+		// Ensure dialog exists too
+		if (document.querySelector('div[role="dialog"]') && sc) return sc;
+		await sleep(150);
+	}
+	// Modal non détectée: naviguer vers /followers/
+	const username = extractUsername(location.href);
+	if (username) {
+		setTimeout(()=>{ try{ location.assign(`/${username}/followers/`); }catch{} }, 0);
+		// Signaler au background de réessayer après navigation
+		return 'NAVIGATING_TO_FOLLOWERS_PAGE';
 	}
 	return null;
 }
@@ -76,7 +90,6 @@ function collectUsernames(root) {
 	const usernames = new Set();
 	for (const el of items) {
 		const href = el.getAttribute('href') || '';
-		// profile links look like /username/
 		const match = href.match(/^\/([^/]+)\/$/);
 		if (match && match[1] && !['explore', 'accounts', 'reels', 'stories'].includes(match[1])) {
 			usernames.add(match[1]);
@@ -85,17 +98,66 @@ function collectUsernames(root) {
 	return Array.from(usernames);
 }
 
+function dispatchWheel(target, dy){
+	try{
+		const evt = new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true });
+		target.dispatchEvent(evt);
+	}catch{}
+}
+
+function ensureFocusable(el){
+	try{
+		if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+		el.focus({ preventScroll: true });
+	}catch{}
+}
+
+// Warm-up to trigger lazy-loading even when page just opened
+async function warmUpScrolling(scrollEl){
+	ensureFocusable(scrollEl);
+	const inModal = !!document.querySelector('div[role="dialog"]');
+	for (let i=0;i<6;i++){
+		if (!inModal && isFollowersPage(location.href)) {
+			window.scrollBy(0, 200);
+			await sleep(120);
+			window.scrollBy(0, -150);
+		}else{
+			scrollEl.scrollTop += 220;
+			dispatchWheel(scrollEl, 220);
+			await sleep(140);
+			scrollEl.scrollTop -= 150;
+			dispatchWheel(scrollEl, -120);
+		}
+		await sleep(120);
+	}
+	// Première descente
+	if (!inModal && isFollowersPage(location.href)) {
+		window.scrollTo(0, document.documentElement.scrollHeight);
+	}else{
+		scrollEl.scrollTop = scrollEl.scrollHeight;
+		dispatchWheel(scrollEl, 300);
+	}
+	await sleep(400);
+}
+
 // Scroll until no new usernames are loaded for several iterations
 async function loadAllFollowers(scrollEl, options = {}) {
 	const {
-		maxIterations = 600,
+		maxIterations = 800,
 		settleRounds = 3,
 		waitMs = 700
 	} = options;
-	let lastCount = 0;
+	await warmUpScrolling(scrollEl);
+	let lastCount = collectUsernames(scrollEl).length;
 	let stableRounds = 0;
+	const inModal = !!document.querySelector('div[role="dialog"]');
 	for (let i = 0; i < maxIterations; i++) {
-		scrollEl.scrollTop = scrollEl.scrollHeight;
+		if (!inModal && isFollowersPage(location.href)) {
+			window.scrollTo(0, document.documentElement.scrollHeight);
+		}else{
+			scrollEl.scrollTop = scrollEl.scrollHeight;
+			dispatchWheel(scrollEl, 300);
+		}
 		await sleep(waitMs);
 		const current = collectUsernames(scrollEl).length;
 		if (current <= lastCount) {
@@ -109,7 +171,11 @@ async function loadAllFollowers(scrollEl, options = {}) {
 }
 
 async function scanFollowers() {
-	const scrollEl = await openFollowersUIAndGetScrollContainer();
+	const scOrSignal = await openFollowersUIAndGetScrollContainer();
+	if (scOrSignal === 'NAVIGATING_TO_FOLLOWERS_PAGE') {
+		return { ok: false, reason: 'navigating_to_followers' };
+	}
+	const scrollEl = scOrSignal;
 	if (!scrollEl) {
 		return { ok: false, reason: 'not_on_profile_or_modal_failed' };
 	}

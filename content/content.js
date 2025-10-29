@@ -49,7 +49,11 @@ async function openFollowersUIAndGetScrollContainer() {
 	if (isFollowersPage(location.href)) {
 		for (let i = 0; i < 20; i++) {
 			const sc = findFollowersScrollContainer();
-			if (sc) return sc;
+			if (sc) {
+				// Laisse le DOM initialiser le lazy-loading
+				await sleep(1200);
+				return sc;
+			}
 			await sleep(250);
 		}
 		return null;
@@ -69,15 +73,17 @@ async function openFollowersUIAndGetScrollContainer() {
 	// Wait for modal and scroll container
 	for (let i = 0; i < 15; i++) {
 		const sc = findFollowersScrollContainer();
-		// Ensure dialog exists too
-		if (document.querySelector('div[role="dialog"]') && sc) return sc;
+		if (document.querySelector('div[role="dialog"]') && sc) {
+			// Petite pause avant de scroller la modale
+			await sleep(1200);
+			return sc;
+		}
 		await sleep(150);
 	}
 	// Modal non détectée: naviguer vers /followers/
 	const username = extractUsername(location.href);
 	if (username) {
 		setTimeout(()=>{ try{ location.assign(`/${username}/followers/`); }catch{} }, 0);
-		// Signaler au background de réessayer après navigation
 		return 'NAVIGATING_TO_FOLLOWERS_PAGE';
 	}
 	return null;
@@ -130,7 +136,6 @@ async function warmUpScrolling(scrollEl){
 		}
 		await sleep(120);
 	}
-	// Première descente
 	if (!inModal && isFollowersPage(location.href)) {
 		window.scrollTo(0, document.documentElement.scrollHeight);
 	}else{
@@ -181,7 +186,6 @@ async function scanFollowers() {
 	}
 	await loadAllFollowers(scrollEl);
 	const usernames = collectUsernames(scrollEl);
-	// Close modal if present and not on dedicated page
 	if (!isFollowersPage(location.href)) {
 		const closeBtn = document.querySelector('div[role="dialog"] button svg[aria-label="Close"], div[role="dialog"] button[aria-label="Close"]')
 			?.closest('button');
@@ -190,7 +194,6 @@ async function scanFollowers() {
 	return { ok: true, usernames };
 }
 
-// Experimental: scrape recent interactions from /accounts/activity/ page
 function scrapeRecentInteractions() {
 	const links = document.querySelectorAll('a[href^="/"]');
 	const usernames = new Set();

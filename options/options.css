@@ -1,0 +1,134 @@
+/* === Base === */
+body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #1a1a1a, #0e0e0e);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+  
+  /* === Container === */
+  .container {
+    width: 100%;
+    max-width: 720px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 0 25px rgba(255, 0, 128, 0.15);
+    backdrop-filter: blur(10px);
+  }
+  
+  /* === Titles === */
+  h1, h2 {
+    text-align: center;
+    margin-top: 0;
+    font-weight: 700;
+  }
+  
+  h1 {
+    font-size: 24px;
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  h2 {
+    font-size: 18px;
+    margin-top: 24px;
+  }
+  
+  /* === Fields === */
+  .field {
+    margin: 18px 0;
+  }
+  
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  input[type="checkbox"],
+  input[type="number"] {
+    accent-color: #ff4ecd;
+  }
+  
+  input[type="number"] {
+    width: 120px;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+    background: #1f1f1f;
+    color: #fff;
+  }
+  
+  .small {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 4px;
+  }
+  
+  /* === Buttons === */
+  .buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #1f1f1f;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-size: 14px;
+  }
+  
+  button:hover {
+    background: #292929;
+    transform: translateY(-1px);
+  }
+  
+  button.primary {
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    font-weight: 600;
+  }
+  
+  /* === Status === */
+  .status {
+    font-size: 13px;
+    color: #ff8f3f;
+    margin-top: 8px;
+  }
+  
+  /* === Divider === */
+  hr {
+    border: none;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 24px 0;
+  }
+  
+  /* === Instructions === */
+  ol {
+    line-height: 1.7;
+    padding-left: 20px;
+  }
+  
+  ul {
+    padding-left: 20px;
+    margin-top: 6px;
+  }
+  
+  strong {
+    color: #ff8f3f;
+  }
+  

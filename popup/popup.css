@@ -1,12 +1,135 @@
-.container{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;padding:12px;width:320px}
- h1{font-size:16px;margin:0 0 8px}
- h2{font-size:14px;margin:12px 0 6px}
- .actions{display:flex;gap:8px;flex-wrap:wrap}
- button{padding:6px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
- button:hover{background:#f6f6f6}
- .status{margin-top:8px;font-size:12px;color:#444}
- .history{list-style:none;padding:0;margin:6px 0;max-height:260px;overflow:auto}
- .history li{padding:6px 4px;border-bottom:1px solid #eee;font-size:12px}
- .pill{display:inline-block;padding:2px 6px;border-radius:10px;font-size:11px;color:#fff}
- .pill-unfollow{background:#d9534f}
- .pill-interaction{background:#0275d8}
+/* === Base === */
+body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #1a1a1a, #0e0e0e);
+    color: #fff;
+    width: 340px;
+    height: auto;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
+  /* === Container === */
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  /* === Titles === */
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #ccc;
+    margin-bottom: 12px;
+  }
+  
+  h2 {
+    font-size: 14px;
+    color: #ddd;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 8px;
+  }
+  
+  /* === Buttons === */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  button {
+    flex: 1 1 45%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: #1f1f1f;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  button:hover {
+    transform: translateY(-1px);
+    background: #292929;
+  }
+  
+  /* === Button Variants === */
+  button.primary {
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    font-weight: 600;
+  }
+  
+  button.secondary {
+    background: linear-gradient(90deg, #6b5bff, #b54eff);
+    font-weight: 600;
+  }
+  
+  button.danger {
+    background: linear-gradient(90deg, #ff3b30, #ff7b6e);
+    font-weight: 600;
+  }
+  
+  /* === Status === */
+  .status {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+  }
+  
+  /* === History === */
+  .history {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(6px);
+  }
+  
+  .history li {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    color: #eee;
+  }
+  
+  .history li:last-child {
+    border-bottom: none;
+  }
+  
+  /* === Pills === */
+  .pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #fff;
+  }
+  
+  .pill-unfollow {
+    background: #ff4e4e;
+  }
+  
+  .pill-interaction {
+    background: #4e8bff;
+  }
+  

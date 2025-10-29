@@ -1,25 +1,33 @@
 <!doctype html>
 <html lang="fr">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Instagram Tracker</title>
-		<link rel="stylesheet" href="popup.css">
-	</head>
-	<body>
-		<div class="container">
-			<h1>Instagram Tracker</h1>
-			<div class="actions">
-				<button id="btn-scan-followers">Scanner mes abonnés</button>
-				<button id="btn-scan-interactions">Interactions récentes (expérimental)</button>
-				<button id="btn-open-followers">Abonnés enregistrés</button>
-				<button id="btn-open-options">Options</button>
-				<button id="btn-clear-history">Effacer l'historique</button>
-			</div>
-			<div id="status" class="status"></div>
-			<h2>Historique</h2>
-			<ul id="history" class="history"></ul>
-		</div>
-		<script src="popup.js"></script>
-	</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instagram Tracker</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1><span class="highlight">Instagram</span> Tracker</h1>
+
+      <p class="subtitle">
+        Suivez vos désabonnements et interactions en temps réel.
+      </p>
+
+      <div class="actions">
+        <button id="btn-scan-followers" class="primary">Scanner mes abonnés</button>
+        <button id="btn-scan-interactions" class="secondary">Interactions récentes</button>
+        <button id="btn-open-followers">Abonnés enregistrés</button>
+        <button id="btn-open-options">Options</button>
+        <button id="btn-clear-history" class="danger">Effacer l'historique</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <h2>Historique</h2>
+      <ul id="history" class="history"></ul>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
 </html>

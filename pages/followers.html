@@ -1,26 +1,37 @@
 <!doctype html>
 <html lang="fr">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Abonnés enregistrés — Instagram Tracker</title>
-		<link rel="stylesheet" href="followers.css">
-	</head>
-	<body>
-		<div class="container">
-			<h1>Abonnés enregistrés</h1>
-			<div class="toolbar">
-				<button id="btn-export">Exporter CSV</button>
-			</div>
-			<div id="meta" class="meta"></div>
-			<div id="status" class="status"></div>
-			<table class="table">
-				<thead>
-					<tr><th>#</th><th>Nom d’utilisateur</th></tr>
-				</thead>
-				<tbody id="tbody"></tbody>
-			</table>
-		</div>
-		<script src="followers.js"></script>
-	</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Abonnés enregistrés — Instagram Tracker</title>
+    <link rel="stylesheet" href="followers.css">
+  </head>
+  <body>
+    <div class="container">
+      <h1><span class="highlight">Abonnés</span> enregistrés</h1>
+
+      <p class="subtitle">Visualisez la liste complète de vos abonnés sauvegardés.</p>
+
+      <div class="toolbar">
+        <button id="btn-export" class="primary">📤 Exporter CSV</button>
+      </div>
+
+      <div id="meta" class="meta"></div>
+      <div id="status" class="status"></div>
+
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nom d’utilisateur</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="followers.js"></script>
+  </body>
 </html>

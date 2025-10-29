@@ -1,10 +1,133 @@
-.container{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;padding:16px;max-width:800px;margin:auto}
- h1{font-size:18px;margin:0 0 12px}
- .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
- button{padding:6px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
- button:hover{background:#f6f6f6}
- .status{margin:8px 0;color:#444}
- .meta{margin:6px 0 10px;font-size:12px;color:#666}
- .table{width:100%;border-collapse:collapse}
- th,td{border-bottom:1px solid #eee;padding:6px;text-align:left;font-size:13px}
- tbody tr:hover{background:#fafafa}
+/* === Base === */
+body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+    background: radial-gradient(circle at 20% 20%, #1a1a1a, #0e0e0e);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  /* === Container === */
+  .container {
+    width: 100%;
+    max-width: 800px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 0 25px rgba(255, 0, 128, 0.15);
+  }
+  
+  /* === Titles === */
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #ccc;
+    margin: 8px 0 16px;
+  }
+  
+  /* === Toolbar === */
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #1f1f1f;
+    color: #fff;
+    transition: all 0.25s ease;
+  }
+  
+  button:hover {
+    transform: translateY(-1px);
+    background: #292929;
+  }
+  
+  /* === Primary button === */
+  button.primary {
+    background: linear-gradient(90deg, #ff4ecd, #ff8f3f);
+    font-weight: 600;
+  }
+  
+  /* === Meta & Status === */
+  .meta {
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+  }
+  
+  .status {
+    font-size: 13px;
+    color: #ff8f3f;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  /* === Table === */
+  .table-container {
+    overflow-y: auto;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  
+  th, td {
+    padding: 10px;
+    text-align: left;
+  }
+  
+  th {
+    background: rgba(255, 255, 255, 0.08);
+    font-weight: 600;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  
+  td {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    color: #ddd;
+  }
+  
+  tbody tr:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transition: 0.2s ease;
+  }
+  
+  /* === Scrollbar === */
+  .table-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ff4ecd, #ff8f3f);
+    border-radius: 3px;
+  }
+  

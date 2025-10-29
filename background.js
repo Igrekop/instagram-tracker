@@ -115,6 +115,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 			sendResponse({ ok: true, history: Array.isArray(events_history) ? events_history : [] });
 			return;
 		}
+		if (message?.type === 'CLEAR_HISTORY') {
+			await writeLocal({ [STORAGE_KEYS.history]: [] });
+			sendResponse({ ok: true });
+			return;
+		}
 		if (message?.type === 'GET_SNAPSHOT') {
 			const { followers_snapshot, last_scan_at } = await readLocal([
 				STORAGE_KEYS.followersSnapshot,

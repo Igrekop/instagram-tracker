@@ -32,6 +32,14 @@ async function getHistory(){
 	});
 }
 
+async function clearHistory(){
+	return new Promise((resolve)=>{
+		chrome.runtime.sendMessage({type:'CLEAR_HISTORY'},(res)=>{
+			resolve(!!res?.ok);
+		});
+	});
+}
+
 async function manualScanFollowers(){
 	setStatus('Scan des abonnés en cours... Ouvrez votre profil Instagram.');
 	chrome.runtime.sendMessage({type:'MANUAL_SCAN_FOLLOWERS'}, async (res)=>{
@@ -50,7 +58,6 @@ async function manualScanFollowers(){
 
 async function scanInteractions(){
 	setStatus('Scan des interactions… Allez sur \'/accounts/activity/\' pour de meilleurs résultats.');
-	// Envoyer un message à l’onglet actif instagram
 	const tabs = await chrome.tabs.query({url:'https://www.instagram.com/*'});
 	if(!tabs || tabs.length===0){ setStatus('Aucun onglet Instagram ouvert.'); return; }
 	const target=tabs[0];
@@ -86,6 +93,16 @@ async function init(){
 	document.getElementById('btn-scan-interactions').addEventListener('click', scanInteractions);
 	document.getElementById('btn-open-options').addEventListener('click', openOptions);
 	document.getElementById('btn-open-followers').addEventListener('click', openFollowersPage);
+	document.getElementById('btn-clear-history').addEventListener('click', async ()=>{
+		setStatus('Effacement de l\'historique...');
+		const ok = await clearHistory();
+		if(ok){
+			setStatus('Historique effacé.');
+			renderHistory([]);
+		}else{
+			setStatus('Échec lors de l\'effacement.');
+		}
+	});
 	const history=await getHistory();
 	renderHistory(history);
 }

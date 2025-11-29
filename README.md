@@ -1,4 +1,5 @@
 # Instagram Tracker (MVP)
+[![Licence](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 Extension Chrome MV3 qui notifie les **unfollows** et enregistre des **interactions récentes** (proxy pour visites de profil) sur Instagram.
 
